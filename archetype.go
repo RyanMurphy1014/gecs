@@ -7,7 +7,7 @@ package main
 type Archetype struct {
 	Signature  uint64
 	Entities   []Entity
-	Components map[CompLabel][]Component
+	Components map[CompLabel]*[]Component
 	EntityIdx  map[Entity]int //Index into the various component slices
 	nextIdx    int            //Next availale index
 	// TODO: Swap/Remove/Defragment indexcies

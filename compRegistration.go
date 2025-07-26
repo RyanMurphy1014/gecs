@@ -1,22 +1,20 @@
 package main
 
-import "errors"
-
 type CompId uint64
 
-var currId CompId = 0
+var currId CompId = 1
 var registerdComps = make(map[string]CompId)
 
-func nextCompId(label string) (CompId, error) {
-	if _, ok := registerdComps[label]; ok {
-		return 0, errors.New("Component already registered")
+func nextCompId(label string) CompId {
+	if reggedId, ok := registerdComps[label]; ok {
+		return reggedId
 	}
 
-	next := currId
+	nextId := currId
 	currId++
-	if next > currId {
+	if nextId > currId {
 		panic("Component ID's have overflown")
 	}
-
-	return next, nil
+	registerdComps[label] = nextId
+	return nextId
 }

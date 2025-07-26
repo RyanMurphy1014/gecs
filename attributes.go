@@ -17,10 +17,7 @@ func (comp Attributes) Id() CompId {
 }
 
 func WithAttributes(random bool) Component {
-	compId, err := nextCompId(string(Attributes_Comp))
-	if err != nil {
-		panic("Component ID has already been registered - WithAttributes()")
-	}
+	compId := nextCompId(string(Attributes_Comp))
 
 	if random == true {
 		return Component{

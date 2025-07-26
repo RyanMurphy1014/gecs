@@ -5,6 +5,15 @@ type ecs struct {
 	EntToArche map[Entity]*Archetype //What archetype an entity belongs to
 }
 
+func (ecs *ecs) Component(e Entity, compLabel CompLabel) *Component {
+	arche := ecs.EntToArche[e]
+	if arche.Components[compLabel] == nil {
+		arche.Components[compLabel] = &[]Component{}
+	}
+	compList := arche.Components[compLabel]
+	return &(*compList)[arche.EntityIdx[e]]
+}
+
 func (ecs *ecs) AddEntity(comps ...Component) Entity {
 	e := NewEntity()
 
@@ -25,17 +34,20 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 		a := Archetype{
 			Signature:  compSig,
 			Entities:   []Entity{},
-			Components: map[CompLabel][]Component{},
+			Components: map[CompLabel]*[]Component{},
 			EntityIdx:  map[Entity]int{},
 			nextIdx:    0,
 		}
 		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
+			if a.Components[comp.CompLabel] == nil {
+				a.Components[comp.CompLabel] = &[]Component{}
+			}
 			compSlice := a.Components[comp.CompLabel]
-			compSlice = append(compSlice, comp)
+			*compSlice = append(*compSlice, comp)
 		}
-
+		ecs.EntToArche[e] = &a
 		ecs.Archetypes[compSig] = &a
 	} else { //									Insert into exsisting Archetype
 		a := ecs.Archetypes[matchedArche]
@@ -43,8 +55,9 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 		a.AssignEntity(e)
 		for _, comp := range comps {
 			compSlice := a.Components[comp.CompLabel]
-			compSlice = append(compSlice, comp)
+			*compSlice = append(*compSlice, comp)
 		}
+		ecs.EntToArche[e] = a
 	}
 	return e
 }
@@ -73,14 +86,17 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 		a := Archetype{
 			Signature:  compSig,
 			Entities:   []Entity{},
-			Components: map[CompLabel][]Component{},
+			Components: map[CompLabel]*[]Component{},
 			EntityIdx:  map[Entity]int{},
 			nextIdx:    0,
 		}
 		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			a.Components[comp.CompLabel] = append(a.Components[comp.CompLabel], comp)
+			if a.Components[comp.CompLabel] == nil {
+				a.Components[comp.CompLabel] = &[]Component{}
+			}
+			*a.Components[comp.CompLabel] = append(*a.Components[comp.CompLabel], comp)
 		}
 
 		ecs.EntToArche[e] = &a
@@ -90,7 +106,7 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			a.Components[comp.CompLabel] = append(a.Components[comp.CompLabel], comp)
+			*a.Components[comp.CompLabel] = append(*a.Components[comp.CompLabel], comp)
 		}
 		ecs.EntToArche[e] = a
 	}
