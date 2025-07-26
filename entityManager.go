@@ -1,17 +1,24 @@
 package main
 
+import (
+	"fmt"
+)
+
 type ecs struct {
 	Archetypes map[uint64]*Archetype
 	EntToArche map[Entity]*Archetype //What archetype an entity belongs to
 }
 
-func (ecs *ecs) Component(e Entity, compLabel CompLabel) *Component {
+func (ecs *ecs) Component(e Entity, compLabel CompLabel) (*Component, error) {
 	arche := ecs.EntToArche[e]
-	if arche.Components[compLabel] == nil {
-		arche.Components[compLabel] = &[]Component{}
+	if arche == nil {
+		return nil, fmt.Errorf("No matching archetype for entity:%v", e)
 	}
-	compList := arche.Components[compLabel]
-	return &(*compList)[arche.EntityIdx[e]]
+	compList, ok := arche.Components[compLabel]
+	if !ok {
+		return nil, fmt.Errorf("Matching entity does not have a matching component of compLabel:%v", compLabel)
+	}
+	return &(*compList)[arche.EntityIdx[e]], nil
 }
 
 func (ecs *ecs) AddEntity(comps ...Component) Entity {
