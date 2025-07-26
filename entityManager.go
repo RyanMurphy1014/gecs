@@ -5,8 +5,8 @@ import (
 )
 
 type ecs struct {
-	Archetypes map[uint64]*Archetype
-	EntToArche map[Entity]*Archetype //What archetype an entity belongs to
+	Archetypes map[uint64]*archetype
+	EntToArche map[Entity]*archetype //What archetype an entity belongs to
 }
 
 func (ecs *ecs) Component(e Entity, compLabel CompLabel) (*Component, error) {
@@ -14,12 +14,19 @@ func (ecs *ecs) Component(e Entity, compLabel CompLabel) (*Component, error) {
 	if arche == nil {
 		return nil, fmt.Errorf("No matching archetype for entity:%v", e)
 	}
-	compList, ok := arche.Components[compLabel]
+	compList, ok := arche.components[compLabel]
 	if !ok {
 		return nil, fmt.Errorf("Matching entity does not have a matching component of compLabel:%v", compLabel)
 	}
-	return &(*compList)[arche.EntityIdx[e]], nil
+	return &(*compList)[arche.entityIdx[e]], nil
 }
+
+// func (ecs *ecs) DeleteEntity(e Entity) error {
+// 	//Reference to comp data is deleted. Component structs are left dangling for garbage collection
+// 	a := ecs.EntToArche[e]
+// 	a.entityIdx[e] = 0
+// 	return nil
+// }
 
 func (ecs *ecs) AddEntity(comps ...Component) Entity {
 	e := NewEntity()
@@ -32,36 +39,33 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 	//Append/Create archetype
 	var matchedArche uint64
 	for _, arche := range ecs.Archetypes {
-		if arche.Signature == compSig {
-			matchedArche = arche.Signature
+		if arche.signature == compSig {
+			matchedArche = arche.signature
 		}
 	}
 
 	if matchedArche == 0 { //					No matching Archetype
-		a := Archetype{
-			Signature:  compSig,
-			Entities:   []Entity{},
-			Components: map[CompLabel]*[]Component{},
-			EntityIdx:  map[Entity]int{},
+		a := archetype{
+			signature:  compSig,
+			components: map[CompLabel]*[]Component{},
+			entityIdx:  map[Entity]int{},
 			nextIdx:    0,
 		}
-		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			if a.Components[comp.CompLabel] == nil {
-				a.Components[comp.CompLabel] = &[]Component{}
+			if a.components[comp.CompLabel] == nil {
+				a.components[comp.CompLabel] = &[]Component{}
 			}
-			compSlice := a.Components[comp.CompLabel]
+			compSlice := a.components[comp.CompLabel]
 			*compSlice = append(*compSlice, comp)
 		}
 		ecs.EntToArche[e] = &a
 		ecs.Archetypes[compSig] = &a
 	} else { //									Insert into exsisting Archetype
 		a := ecs.Archetypes[matchedArche]
-		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			compSlice := a.Components[comp.CompLabel]
+			compSlice := a.components[comp.CompLabel]
 			*compSlice = append(*compSlice, comp)
 		}
 		ecs.EntToArche[e] = a
@@ -71,8 +75,8 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 
 func NewECS(comps ...Component) (*ecs, Entity) {
 	ecs := ecs{
-		Archetypes: map[uint64]*Archetype{},
-		EntToArche: map[Entity]*Archetype{},
+		Archetypes: map[uint64]*archetype{},
+		EntToArche: map[Entity]*archetype{},
 	}
 	e := NewEntity()
 
@@ -84,36 +88,33 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 	//Append/Create archetype
 	var matchedArche uint64
 	for _, arche := range ecs.Archetypes {
-		if arche.Signature == compSig {
-			matchedArche = arche.Signature
+		if arche.signature == compSig {
+			matchedArche = arche.signature
 		}
 	}
 
 	if matchedArche == 0 { //					No matching Archetype
-		a := Archetype{
-			Signature:  compSig,
-			Entities:   []Entity{},
-			Components: map[CompLabel]*[]Component{},
-			EntityIdx:  map[Entity]int{},
+		a := archetype{
+			signature:  compSig,
+			components: map[CompLabel]*[]Component{},
+			entityIdx:  map[Entity]int{},
 			nextIdx:    0,
 		}
-		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			if a.Components[comp.CompLabel] == nil {
-				a.Components[comp.CompLabel] = &[]Component{}
+			if a.components[comp.CompLabel] == nil {
+				a.components[comp.CompLabel] = &[]Component{}
 			}
-			*a.Components[comp.CompLabel] = append(*a.Components[comp.CompLabel], comp)
+			*a.components[comp.CompLabel] = append(*a.components[comp.CompLabel], comp)
 		}
 
 		ecs.EntToArche[e] = &a
 		ecs.Archetypes[compSig] = &a
 	} else { //									Insert into exsisting Archetype
 		a := ecs.Archetypes[matchedArche]
-		a.Entities = append(a.Entities, e)
 		a.AssignEntity(e)
 		for _, comp := range comps {
-			*a.Components[comp.CompLabel] = append(*a.Components[comp.CompLabel], comp)
+			*a.components[comp.CompLabel] = append(*a.components[comp.CompLabel], comp)
 		}
 		ecs.EntToArche[e] = a
 	}

@@ -2,7 +2,7 @@ package main
 
 var curId uint64 = 0
 
-func newEntId() uint64 {
+func newId() uint64 {
 	newId := curId
 	curId++
 	if newId > curId {
@@ -14,6 +14,6 @@ func newEntId() uint64 {
 type Entity uint64
 
 func NewEntity() Entity {
-	e := Entity(newEntId())
+	e := Entity(newId())
 	return e
 }
