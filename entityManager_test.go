@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestNewEcsSingleComp(t *testing.T) {
 	attr := WithAttributes(true)
@@ -124,4 +128,51 @@ func TestInvalidCompLookup(t *testing.T) {
 	} else {
 		t.Fatal("Invalid component lookup did not error")
 	}
+}
+
+func TestEntityRemoval(t *testing.T) {
+	attr := WithAttributes(true)
+	ecs, e1 := NewECS(attr)
+	e1Idx := ecs.EntToArche[e1].entityIdx[e1]
+
+	ecs.Remove(e1)
+
+	t.Run("Entity Removal", func(t *testing.T) {
+		comp, err := ecs.Component(e1, Attributes_Comp)
+		if err == nil {
+			t.Log(comp)
+			t.Fatal("Invalid Component lookup did not error")
+		}
+	})
+	e2 := ecs.AddEntity(WithAttributes(true))
+	e2Idx := ecs.EntToArche[e2].entityIdx[e2]
+	t.Run("Entity Insertion", func(t *testing.T) {
+		if e1Idx != e2Idx {
+			var sb strings.Builder
+			for ent, idx := range ecs.EntToArche[e2].entityIdx {
+				sb.WriteString(fmt.Sprintf("ent:%v - Index:%v\n", ent, idx))
+			}
+			t.Log(sb.String())
+			t.Fatalf("First archetype IDX:%v  is not resued for Second Entity. Second IDX:%v", e1Idx, e2Idx)
+		}
+	})
+	t.Run("Mutltiple Empty Slots", func(t *testing.T) {
+		e3 := ecs.AddEntity(WithAttributes(true))
+		e3Idx := ecs.EntToArche[e3].entityIdx[e3]
+		e4 := ecs.AddEntity(WithAttributes(true))
+		e4Idx := ecs.EntToArche[e4].entityIdx[e4]
+		ecs.Remove(e3)
+		ecs.Remove(e4)
+		e5 := ecs.AddEntity(WithAttributes(true))
+		e5Idx := ecs.EntToArche[e5].entityIdx[e5]
+		e6 := ecs.AddEntity(WithAttributes(true))
+		e6Idx := ecs.EntToArche[e6].entityIdx[e6]
+
+		if e5Idx != e4Idx {
+			t.Fatalf("e5Idx:%v != e4Idx:%v", e5Idx, e4Idx)
+		}
+		if e6Idx != e3Idx {
+			t.Fatalf("e6Idx:%v != e3Idx:%v", e6Idx, e3Idx)
+		}
+	})
 }

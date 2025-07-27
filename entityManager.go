@@ -21,12 +21,16 @@ func (ecs *ecs) Component(e Entity, compLabel CompLabel) (*Component, error) {
 	return &(*compList)[arche.entityIdx[e]], nil
 }
 
-// func (ecs *ecs) DeleteEntity(e Entity) error {
-// 	//Reference to comp data is deleted. Component structs are left dangling for garbage collection
-// 	a := ecs.EntToArche[e]
-// 	a.entityIdx[e] = 0
-// 	return nil
-// }
+func (ecs *ecs) Remove(e Entity) error {
+	a, ok := ecs.EntToArche[e]
+	if !ok {
+		return fmt.Errorf("Entity:%v - does not exsist in this ECS", e)
+	}
+	a.openIdxs = append(a.openIdxs, a.entityIdx[e])
+	a.entityIdx[Entity(a.entityIdx[e])] = 0
+	ecs.EntToArche[e] = nil
+	return nil
+}
 
 func (ecs *ecs) AddEntity(comps ...Component) Entity {
 	e := NewEntity()
@@ -50,6 +54,7 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 			components: map[CompLabel]*[]Component{},
 			entityIdx:  map[Entity]int{},
 			nextIdx:    0,
+			openIdxs:   []int{},
 		}
 		a.AssignEntity(e)
 		for _, comp := range comps {
@@ -99,6 +104,7 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 			components: map[CompLabel]*[]Component{},
 			entityIdx:  map[Entity]int{},
 			nextIdx:    0,
+			openIdxs:   []int{},
 		}
 		a.AssignEntity(e)
 		for _, comp := range comps {

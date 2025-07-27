@@ -9,12 +9,17 @@ type archetype struct {
 	components map[CompLabel]*[]Component
 	entityIdx  map[Entity]int //Index into the various component slices
 	nextIdx    int            //Next availale index
-	// TODO: Swap/Remove/Defragment indexcies
+	openIdxs   []int
 }
 
 func (a *archetype) AssignEntity(e Entity) {
-	a.entityIdx[e] = a.nextIdx
-	a.nextIdx++
+	if len(a.openIdxs) > 0 {
+		a.entityIdx[e] = a.openIdxs[len(a.openIdxs)-1] //Pop from slice
+		a.openIdxs = a.openIdxs[:len(a.openIdxs)-1]
+	} else {
+		a.entityIdx[e] = a.nextIdx
+		a.nextIdx++
+	}
 }
 
 type CompLabel string
