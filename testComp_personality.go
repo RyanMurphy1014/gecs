@@ -36,6 +36,10 @@ func (comp Personality) Id() CompId {
 	return comp.CompId
 }
 
+func (comp Personality) SetId(id CompId) {
+	comp.CompId = id
+}
+
 type GenMethod string
 
 var Random GenMethod = "Random"
@@ -50,7 +54,6 @@ func WithPersonality(genMethod GenMethod) Component {
 		return Component{
 			CompLabel: Personality_Comp,
 			CompData: Personality{
-				CompId:     CompId,
 				Aggression: 0,
 				Curiosity:  0,
 				Drive:      0,
@@ -75,7 +78,6 @@ func WithPersonality(genMethod GenMethod) Component {
 				Optimism:   RandomStat(),
 				Reason:     RandomStat(),
 				Socialness: RandomStat(),
-				CompId:     CompId,
 			},
 		}
 	default:

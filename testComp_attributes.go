@@ -15,15 +15,15 @@ type Attributes struct {
 func (comp Attributes) Id() CompId {
 	return comp.CompId
 }
+func (comp Attributes) SetId(id CompId) {
+	comp.CompId = id
+}
 
 func WithAttributes(random bool) Component {
-	compId := nextCompId(string(Attributes_Comp))
-
 	if random == true {
 		return Component{
 			CompLabel: Attributes_Comp,
 			CompData: Attributes{
-				CompId:       compId,
 				Strength:     RandomStat(),
 				Dexterity:    RandomStat(),
 				Constitution: RandomStat(),
@@ -36,7 +36,6 @@ func WithAttributes(random bool) Component {
 	return Component{
 		CompLabel: Attributes_Comp,
 		CompData: Attributes{
-			CompId:       compId,
 			Strength:     0,
 			Dexterity:    0,
 			Constitution: 0,

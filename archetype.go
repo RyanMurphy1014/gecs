@@ -12,7 +12,7 @@ type archetype struct {
 	openIdxs   []int
 }
 
-func (a *archetype) AssignEntity(e Entity) {
+func (a *archetype) assignEntity(e Entity) {
 	if len(a.openIdxs) > 0 {
 		a.entityIdx[e] = a.openIdxs[len(a.openIdxs)-1] //Pop from slice
 		a.openIdxs = a.openIdxs[:len(a.openIdxs)-1]
@@ -26,6 +26,7 @@ type CompLabel string
 
 type CompData interface {
 	Id() CompId
+	SetId(CompId)
 }
 
 type Component struct {

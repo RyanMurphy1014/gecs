@@ -38,6 +38,7 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 	//Get Comp signatures
 	var compSig uint64 = 0
 	for _, comp := range comps {
+		comp.SetId(nextCompId(string(comp.CompLabel)))
 		compSig |= uint64(comp.Id()) //Bitwise OR bitfield signature of components
 	}
 	//Append/Create archetype
