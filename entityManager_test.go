@@ -158,15 +158,15 @@ func TestEntityRemoval(t *testing.T) {
 	})
 	t.Run("Mutltiple Empty Slots", func(t *testing.T) {
 		e3 := ecs.AddEntity(WithAttributes(true))
-		e3Idx := ecs.EntToArche[e3].entityIdx[e3]
+		e3Idx := ecs.entityIdx(e3)
 		e4 := ecs.AddEntity(WithAttributes(true))
-		e4Idx := ecs.EntToArche[e4].entityIdx[e4]
+		e4Idx := ecs.entityIdx(e4)
 		ecs.Remove(e3)
 		ecs.Remove(e4)
 		e5 := ecs.AddEntity(WithAttributes(true))
-		e5Idx := ecs.EntToArche[e5].entityIdx[e5]
+		e5Idx := ecs.entityIdx(e5)
 		e6 := ecs.AddEntity(WithAttributes(true))
-		e6Idx := ecs.EntToArche[e6].entityIdx[e6]
+		e6Idx := ecs.entityIdx(e6)
 
 		if e5Idx != e4Idx {
 			t.Fatalf("e5Idx:%v != e4Idx:%v", e5Idx, e4Idx)

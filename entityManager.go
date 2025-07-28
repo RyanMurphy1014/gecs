@@ -56,7 +56,7 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 			nextIdx:    0,
 			openIdxs:   []int{},
 		}
-		a.AssignEntity(e)
+		a.linkEntity(e)
 		for _, comp := range comps {
 			if a.components[comp.CompLabel] == nil {
 				a.components[comp.CompLabel] = &[]Component{}
@@ -68,7 +68,7 @@ func (ecs *ecs) AddEntity(comps ...Component) Entity {
 		ecs.Archetypes[compSig] = &a
 	} else { //									Insert into exsisting Archetype
 		a := ecs.Archetypes[matchedArche]
-		a.AssignEntity(e)
+		a.linkEntity(e)
 		for _, comp := range comps {
 			compSlice := a.components[comp.CompLabel]
 			*compSlice = append(*compSlice, comp)
@@ -106,7 +106,7 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 			nextIdx:    0,
 			openIdxs:   []int{},
 		}
-		a.AssignEntity(e)
+		a.linkEntity(e)
 		for _, comp := range comps {
 			if a.components[comp.CompLabel] == nil {
 				a.components[comp.CompLabel] = &[]Component{}
@@ -118,7 +118,7 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 		ecs.Archetypes[compSig] = &a
 	} else { //									Insert into exsisting Archetype
 		a := ecs.Archetypes[matchedArche]
-		a.AssignEntity(e)
+		a.linkEntity(e)
 		for _, comp := range comps {
 			*a.components[comp.CompLabel] = append(*a.components[comp.CompLabel], comp)
 		}
@@ -126,4 +126,8 @@ func NewECS(comps ...Component) (*ecs, Entity) {
 	}
 
 	return &ecs, e
+}
+
+func (ecs *ecs) entityIdx(e Entity) int {
+	return ecs.EntToArche[e].entityIdx[e]
 }
