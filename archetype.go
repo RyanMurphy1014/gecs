@@ -3,7 +3,6 @@ package main
 //archetypes == list of entities with matching compnents
 //Matched by a bitfield signature^
 
-// Do not access nextIdx, call AssignEntity(e Entity)
 type archetype struct {
 	signature  uint64
 	components map[CompLabel]*[]Component
@@ -12,7 +11,7 @@ type archetype struct {
 	openIdxs   []int
 }
 
-func (a *archetype) assignEntity(e Entity) {
+func (a *archetype) linkEntity(e Entity) {
 	if len(a.openIdxs) > 0 {
 		a.entityIdx[e] = a.openIdxs[len(a.openIdxs)-1] //Pop from slice
 		a.openIdxs = a.openIdxs[:len(a.openIdxs)-1]
