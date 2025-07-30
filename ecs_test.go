@@ -33,7 +33,7 @@ func TestMultiEntSingleComp(t *testing.T) {
 func TestSingleEntMultiComp(t *testing.T) {
 	attr := WithAttributes(true)
 	pers := WithPersonality(Random)
-	ecs, e := NewECS(attr, pers)
+	ecs, e := NewECS(pers, attr)
 	returnComp1, _ := ecs.Component(e, Attributes_Comp)
 	if *returnComp1 != attr {
 		t.Errorf("Got %v, want %v", *returnComp1, attr)
