@@ -20,15 +20,3 @@ func (a *archetype) linkEntity(e Entity) {
 		a.nextIdx++
 	}
 }
-
-type CompLabel string
-
-type CompData interface {
-	Id() CompId
-	SetId(CompId)
-}
-
-type Component struct {
-	CompLabel
-	CompData
-}

@@ -2,6 +2,18 @@ package main
 
 type CompId uint64
 
+type CompLabel string
+
+type CompData interface {
+	Id() CompId
+	SetId(CompId)
+}
+
+type Component struct {
+	CompLabel
+	CompData
+}
+
 var currId CompId = 1
 var registerdComps = make(map[string]CompId)
 
