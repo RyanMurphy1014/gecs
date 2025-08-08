@@ -11,9 +11,9 @@ func newId() uint64 {
 	return newId
 }
 
-type Entity uint64
+type entity uint64
 
-func NewEntity() Entity {
-	e := Entity(newId())
+func newEntity() entity {
+	e := entity(newId())
 	return e
 }

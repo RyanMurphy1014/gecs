@@ -1,32 +1,27 @@
 package main
 
-type CompId uint64
+import "reflect"
 
-type CompLabel string
-
-type CompData interface {
-	Id() CompId
-	SetId(CompId)
+type compStorer interface {
+	add(data any, e entity, a *archetype)
 }
 
-type Component struct {
-	CompLabel
-	CompData
+type compStore[T any] struct {
+	data []T
 }
 
-var currId CompId = 1
-var registerdComps = make(map[string]CompId)
+func (cs *compStore[T]) add(data any, e entity, a *archetype) {
+	cs.data[a.entityIdx[e]] = data.(T)
+}
 
-func nextCompId(label string) CompId {
-	if reggedId, ok := registerdComps[label]; ok {
-		return reggedId
+func Register[T any](ecs *ecs) uint64 {
+	key := reflect.TypeOf((*T)(nil)).Elem()
+	if compId, ok := ecs.componentIds[key]; ok {
+		return compId
 	}
 
-	nextId := currId
-	currId++
-	if nextId > currId {
-		panic("Component ID's have overflown")
-	}
-	registerdComps[label] = nextId
-	return nextId
+	var compId uint64 = 1 << ecs.nextCompID
+	ecs.componentIds[key] = compId
+	ecs.nextCompID++
+	return compId
 }

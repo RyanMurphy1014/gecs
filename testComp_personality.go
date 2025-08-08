@@ -7,7 +7,6 @@ import (
 )
 
 type Personality struct {
-	CompId
 	Aggression int // 0=Pacifist, 100=Aggressive
 	Curiosity  int // 0=Traditionalist, 100=Curious
 	Drive      int // 0=Lazy, 100=Industrious
@@ -32,69 +31,30 @@ func (p Personality) String() string {
 	return sb.String()
 }
 
-func (comp Personality) Id() CompId {
-	return comp.CompId
-}
-
-func (comp Personality) SetId(id CompId) {
-	comp.CompId = id
-}
-
-type GenMethod string
-
-var Random GenMethod = "Random"
-var Empty GenMethod = "Empty"
-
-var Personality_Comp CompLabel = "Personality"
-
-func WithPersonality(genMethod GenMethod) Component {
-	CompId := nextCompId(string(Personality_Comp))
-	switch genMethod {
-	case "Empty":
-		return Component{
-			CompLabel: Personality_Comp,
-			CompData: Personality{
-				Aggression: 0,
-				Curiosity:  0,
-				Drive:      0,
-				Empathy:    0,
-				Honesty:    0,
-				Loyalty:    0,
-				Optimism:   0,
-				Reason:     0,
-				Socialness: 0,
-			},
+func WithPersonality(random bool) Personality {
+	if !random {
+		return Personality{
+			Aggression: 0,
+			Curiosity:  0,
+			Drive:      0,
+			Empathy:    0,
+			Honesty:    0,
+			Loyalty:    0,
+			Optimism:   0,
+			Reason:     0,
+			Socialness: 0,
 		}
-	case "Random":
-		return Component{
-			CompLabel: Personality_Comp,
-			CompData: Personality{
-				Aggression: RandomStat(),
-				Curiosity:  RandomStat(),
-				Drive:      RandomStat(),
-				Empathy:    RandomStat(),
-				Honesty:    RandomStat(),
-				Loyalty:    RandomStat(),
-				Optimism:   RandomStat(),
-				Reason:     RandomStat(),
-				Socialness: RandomStat(),
-			},
-		}
-	default:
-		return Component{
-			CompLabel: Personality_Comp,
-			CompData: Personality{
-				CompId:     CompId,
-				Aggression: 0,
-				Curiosity:  0,
-				Drive:      0,
-				Empathy:    0,
-				Honesty:    0,
-				Loyalty:    0,
-				Optimism:   0,
-				Reason:     0,
-				Socialness: 0,
-			},
+	} else {
+		return Personality{
+			Aggression: RandomStat(),
+			Curiosity:  RandomStat(),
+			Drive:      RandomStat(),
+			Empathy:    RandomStat(),
+			Honesty:    RandomStat(),
+			Loyalty:    RandomStat(),
+			Optimism:   RandomStat(),
+			Reason:     RandomStat(),
+			Socialness: RandomStat(),
 		}
 	}
 }

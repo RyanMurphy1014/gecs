@@ -1,17 +1,14 @@
 package main
 
-//archetypes == list of entities with matching compnents
-//Matched by a bitfield signature^
-
 type archetype struct {
-	signature  uint64
-	components map[CompLabel]*[]Component
-	entityIdx  map[Entity]int //Index into the various component slices
-	nextIdx    int            //Next availale index
-	openIdxs   []int
+	signature uint64
+	compStore map[uint64]compStorer
+	entityIdx map[entity]uint //Index into the various component slices
+	nextIdx   uint            //Next availale index
+	openIdxs  []uint
 }
 
-func (a *archetype) linkEntity(e Entity) {
+func (a *archetype) linkEntity(e entity) {
 	if len(a.openIdxs) > 0 {
 		a.entityIdx[e] = a.openIdxs[len(a.openIdxs)-1] //Pop from slice
 		a.openIdxs = a.openIdxs[:len(a.openIdxs)-1]
