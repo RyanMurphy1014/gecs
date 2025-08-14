@@ -4,46 +4,71 @@ import (
 	"testing"
 )
 
-func TestNewEcsSingleComp(t *testing.T) {
-	attrComp := WithAttributes(true)
+func TestQuerying(t *testing.T) {
+
 	ecs := NewEcs()
 	register[Attributes](ecs)
-	a := NewArchetype()
-	With[Attributes](ecs, a)
-	NewEcs().EmbedArchetype(a)
-	e := ecs.NewEntity(a)
+
+	attributesArche := NewArchetype()
+	With[Attributes](ecs, attributesArche)
+	ecs.EmbedArchetype(attributesArche)
+
+	e := ecs.NewEntity(attributesArche)
+
+	attrComp := WithAttributes(true)
 	MutateEntity(ecs, e, attrComp)
-	queriedComp := Query[Attributes](ecs, e)
-	if queriedComp != attrComp {
-		t.Fatalf("Queried Comp:\n%v does not match control comp:\n%v", queriedComp, attrComp)
-	}
 
-}
+	t.Run("Querying an entity with a single component", func(t *testing.T) {
+		queriedComp := Query[Attributes](ecs, e)
+		if queriedComp != attrComp {
+			t.Fatalf("Queried Comp:\n%v does not match control comp:\n%v", queriedComp, attrComp)
+		}
+	})
 
-func TestMultiEntSingleComp(t *testing.T) {
-	t.Skip()
-}
+	attrAndPersonalityArche := NewArchetype()
+	With[Attributes](ecs, attrAndPersonalityArche)
+	With[Personality](ecs, attrAndPersonalityArche)
+	ecs.EmbedArchetype(attrAndPersonalityArche)
 
-func TestSingleEntMultiComp(t *testing.T) {
-	t.Skip()
-}
+	e2 := ecs.NewEntity(attrAndPersonalityArche)
 
-func TestSingleArcheMultiComp(t *testing.T) {
-	t.Skip()
-}
+	personalityComp := WithPersonality(true)
+	MutateEntity(ecs, e2, attrComp)
+	MutateEntity(ecs, e2, personalityComp)
 
-func TestMultiArcheSingleComp(t *testing.T) {
-	t.Skip()
-}
+	t.Run("Querying an entity with multiple components", func(t *testing.T) {
+		queriedAttr := Query[Attributes](ecs, e2)
+		queriedPersonality := Query[Personality](ecs, e2)
+		if queriedAttr != attrComp {
+			t.Fatalf("Attributes does not match")
+		}
+		if queriedPersonality != personalityComp {
+			t.Fatalf("Personality does not match")
+		}
+	})
 
-func TestMultiArcheMultiEnt(t *testing.T) {
-	t.Skip()
-}
+	e3 := ecs.NewEntity(attrAndPersonalityArche)
+	attrComp2 := WithAttributes(true)
+	personalityComp2 := WithPersonality(true)
+	MutateEntity(ecs, e3, attrComp2)
+	MutateEntity(ecs, e3, personalityComp2)
 
-func TestInvalidCompLookup(t *testing.T) {
-	t.Skip()
-}
+	t.Run("Querying an archetype with multiple entities", func(t *testing.T) {
+		queriedAttr := Query[Attributes](ecs, e3)
+		queriedPersonality := Query[Personality](ecs, e3)
+		if queriedAttr != attrComp2 {
+			t.Fatalf("Attributes does not match")
+		}
+		if queriedPersonality != personalityComp2 {
+			t.Fatalf("Personlaity does not match")
+		}
+	})
 
-func TestEntityRemoval(t *testing.T) {
-	t.Skip()
+	e4 := ecs.NewEntity(attributesArche)
+	t.Run("Querying an entity with default value", func(t *testing.T) {
+		if Query[Attributes](ecs, e4) != WithAttributes(false) {
+			t.Fatalf("Corresponding compStore is not initialized")
+		}
+	})
+
 }
