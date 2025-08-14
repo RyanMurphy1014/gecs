@@ -4,18 +4,20 @@ import (
 	"testing"
 )
 
-func TestECS(t *testing.T) {
-
-}
-
 func TestNewEcsSingleComp(t *testing.T) {
-	ecs := NewECS()
-	Register[Attributes](ecs)
-	attr := WithAttributes(true)
-	e1 := ecs.AddEntity(attr)
-	if comp, _ := QueryEntity[Attributes](e1, ecs); *comp != attr {
-		t.Fatal()
+	attrComp := WithAttributes(true)
+	ecs := NewEcs()
+	register[Attributes](ecs)
+	a := NewArchetype()
+	With[Attributes](ecs, a)
+	NewEcs().EmbedArchetype(a)
+	e := ecs.NewEntity(a)
+	MutateEntity(ecs, e, attrComp)
+	queriedComp := Query[Attributes](ecs, e)
+	if queriedComp != attrComp {
+		t.Fatalf("Queried Comp:\n%v does not match control comp:\n%v", queriedComp, attrComp)
 	}
+
 }
 
 func TestMultiEntSingleComp(t *testing.T) {

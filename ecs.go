@@ -1,95 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
 
 type ecs struct {
-	archetypes    map[uint64]*archetype
-	entToArche    map[entity]*archetype //What archetype an entity belongs to
-	archeTypeSigs []uint64
-	componentIds  map[reflect.Type]uint64
-	nextCompID    uint64
+	archetypes   map[uint64]*archetype
+	entToArche   map[entity]*archetype //What archetype an entity belongs to
+	componentIds map[reflect.Type]uint64
+	nextCompID   uint64
 }
 
-func QueryEntity[T any](e entity, ecs *ecs) (*T, error) {
-	a, ok := ecs.entToArche[e]
-	if !ok {
-		return nil, errors.New("This entity does not belong to the ecs")
-	}
-	idx := a.entityIdx[e]
-	compId := Register[T](ecs)
-	store, ok := a.compStore[compId]
-	if !ok {
-		return nil, errors.New("Entity does not have the coresponding component")
-	}
-	typedStore := store.(*compStore[T])
-	return &typedStore.data[idx], nil
-}
-
-func (ecs *ecs) Remove(e entity) error {
-	a, ok := ecs.entToArche[e]
-	if !ok {
-		return fmt.Errorf("Entity:%v - does not exsist in this ECS", e)
-	}
-	a.openIdxs = append(a.openIdxs, a.entityIdx[e])
-	a.entityIdx[entity(a.entityIdx[e])] = 0
-	ecs.entToArche[e] = nil
-	return nil
-}
-
-func (ecs *ecs) AddEntity(compSet ...any) entity {
-	e := newEntity()
-
-	//Get Comp signatures
-	var compSetSig uint64 = 0
-	for _, comp := range compSet {
-		compType := reflect.TypeOf(comp)
-		compId, registered := ecs.componentIds[compType]
-		if !registered {
-			panic("Attempting to add unregistered component of type: " + compType.Name())
-		}
-		compSetSig |= compId
-	}
-
-	//Find matching arche
-	arche, ok := ecs.archetypes[compSetSig]
-	if !ok { //No match. Must create archetype
-		a := &archetype{
-			signature: compSetSig,
-			compStore: map[uint64]compStorer{},
-			entityIdx: map[entity]uint{},
-			nextIdx:   0,
-			openIdxs:  []uint{},
-		}
-
-		for _, comp := range compSet {
-			compType := reflect.TypeOf(comp)
-			a.compStore[ecs.componentIds[compType]] = &compStore[any]{
-				data: []any{},
-			}
-		}
-
-		arche = a
-		ecs.archeTypeSigs = append(ecs.archeTypeSigs, compSetSig)
-		ecs.archetypes[compSetSig] = a
-	} else {
-		arche = ecs.archetypes[arche.signature]
-	}
-
-	arche.linkEntity(e)
-	ecs.entToArche[e] = arche
-
-	//Store
-	for _, comp := range compSet {
-		arche.compStore[compSetSig].add(comp, e, arche)
-	}
-	return e
-}
-
-func NewECS() *ecs {
+func NewEcs() *ecs {
 	return &ecs{
 		archetypes:   map[uint64]*archetype{},
 		entToArche:   map[entity]*archetype{},
@@ -98,6 +21,88 @@ func NewECS() *ecs {
 	}
 }
 
-func (ecs *ecs) entityIdx(e entity) uint {
-	return ecs.entToArche[e].entityIdx[e]
+func register[T any](ecs *ecs) uint64 {
+	key := reflect.TypeOf((*T)(nil)).Elem()
+	if compId, ok := ecs.componentIds[key]; ok {
+		return compId
+	}
+
+	var compId uint64 = 1 << ecs.nextCompID
+	ecs.componentIds[key] = compId
+	ecs.nextCompID++
+	return compId
+}
+
+func (ecs *ecs) NewEntity(a *archetype) entity {
+	e := newEntity()
+	a.insertEntity(e)
+	ecs.entToArche[e] = a
+	return e
+}
+
+func Query[T any](ecs *ecs, e entity) T {
+	tType := reflect.TypeOf((*T)(nil)).Elem()
+	_, ok := ecs.componentIds[tType]
+	if !ok {
+		panic(fmt.Sprintf("Parameter Type:%v is not registred in ecs", tType))
+	}
+	a := ecs.entToArche[e]
+	untypeStore := a.compStore[ecs.componentIds[tType]]
+	typedStore, _ := untypeStore.(*compStore[T])
+	return typedStore.data[a.entityIdx[e]]
+}
+
+func (ecs *ecs) EmbedArchetype(a *archetype) {
+	ecs.archetypes[a.signature] = a
+	a.mutable = false
+}
+
+func MutateEntity[T any](ecs *ecs, e entity, comp T) {
+	TType := reflect.TypeOf((*T)(nil)).Elem()
+	compType := reflect.TypeOf(comp)
+	ecs.isCompRegistered(comp)
+	if TType != compType {
+		panic(fmt.Sprintf("Generic Type:%v is not the same type as argument comp type:%v", TType, compType))
+	}
+	compSig := ecs.componentIds[compType]
+	a, ok := ecs.entToArche[e]
+	if !ok {
+		panic("Could not find matching archetype")
+	}
+	store, ok := a.compStore[compSig].(*compStore[T])
+	if !ok {
+		panic("Could not type assert")
+	}
+	store.data[a.entityIdx[e]] = comp
+}
+
+func (ecs *ecs) isCompRegistered(comp any) {
+	compType := reflect.TypeOf(comp)
+	if _, ok := ecs.componentIds[compType]; !ok {
+		panic(fmt.Sprintf("Component:%v is not registered with ecs", compType))
+	}
+}
+
+func (ecs *ecs) AddEntToArche(a archetype, compSet ...any) entity {
+	e := newEntity()
+	for _, comp := range compSet {
+		compType := reflect.TypeOf(comp)
+		compSig, ok := ecs.componentIds[compType]
+		//If comp is registered
+		if !ok {
+			panic(fmt.Sprintf("Component:%v is registered", compType))
+		}
+
+		//If component does not belong to archetype
+		if (compSig & a.signature) != compSig {
+			panic(fmt.Sprintf("Component:%v is not a part of archetype with signature:%v", compType, a.signature))
+		}
+
+		ecs.entToArche[e] = &a
+		a.insertEntity(e)
+		compStore := a.compStore[compSig]
+		compStore.add(comp, e, &a)
+		a.compStore[compSig] = compStore
+	}
+	return e
 }
