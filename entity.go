@@ -6,7 +6,7 @@ func newId() uint64 {
 	newId := curId
 	curId++
 	if newId > curId {
-		panic("Entity ID's have overflown")
+		panic("Gecs: Entity ID's have overflown")
 	}
 	return newId
 }

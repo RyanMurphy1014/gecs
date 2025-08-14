@@ -44,9 +44,12 @@ func Query[T any](ecs *ecs, e entity) T {
 	tType := reflect.TypeOf((*T)(nil)).Elem()
 	_, ok := ecs.componentIds[tType]
 	if !ok {
-		panic(fmt.Sprintf("Parameter Type:%v is not registred in ecs", tType))
+		panic(fmt.Sprintf("Gecs: Parameter Type:%v is not registred in ecs", tType))
 	}
 	a := ecs.entToArche[e]
+	if a.mutable {
+		panic("Gecs: Archetype composition must be finalized by calling ecs's method EmbedArchetype() before use.")
+	}
 	untypeStore := a.compStore[ecs.componentIds[tType]]
 	typedStore, _ := untypeStore.(*compStore[T])
 	return typedStore.data[a.entityIdx[e]]
@@ -62,16 +65,16 @@ func MutateEntity[T any](ecs *ecs, e entity, comp T) {
 	compType := reflect.TypeOf(comp)
 	ecs.isCompRegistered(comp)
 	if TType != compType {
-		panic(fmt.Sprintf("Generic Type:%v is not the same type as argument comp type:%v", TType, compType))
+		panic(fmt.Sprintf("Gecs: Generic Type:%v is not the same type as argument comp type:%v", TType, compType))
 	}
 	compSig := ecs.componentIds[compType]
 	a, ok := ecs.entToArche[e]
 	if !ok {
-		panic("Could not find matching archetype")
+		panic("Gecs: Could not find matching archetype")
 	}
 	store, ok := a.compStore[compSig].(*compStore[T])
 	if !ok {
-		panic("Could not type assert")
+		panic("Gecs: Could not type assert")
 	}
 	store.data[a.entityIdx[e]] = comp
 }
@@ -79,7 +82,7 @@ func MutateEntity[T any](ecs *ecs, e entity, comp T) {
 func (ecs *ecs) isCompRegistered(comp any) {
 	compType := reflect.TypeOf(comp)
 	if _, ok := ecs.componentIds[compType]; !ok {
-		panic(fmt.Sprintf("Component:%v is not registered with ecs", compType))
+		panic(fmt.Sprintf("Gecs: Component:%v is not registered with ecs", compType))
 	}
 }
 
@@ -90,12 +93,12 @@ func (ecs *ecs) AddEntToArche(a archetype, compSet ...any) entity {
 		compSig, ok := ecs.componentIds[compType]
 		//If comp is registered
 		if !ok {
-			panic(fmt.Sprintf("Component:%v is registered", compType))
+			panic(fmt.Sprintf("Gecs: Component:%v is registered", compType))
 		}
 
 		//If component does not belong to archetype
 		if (compSig & a.signature) != compSig {
-			panic(fmt.Sprintf("Component:%v is not a part of archetype with signature:%v", compType, a.signature))
+			panic(fmt.Sprintf("Gecs: Component:%v is not a part of archetype with signature:%v", compType, a.signature))
 		}
 
 		ecs.entToArche[e] = &a
