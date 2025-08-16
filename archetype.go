@@ -3,22 +3,22 @@ package main
 import "reflect"
 
 type archetype struct {
-	signature uint64
-	compStore map[uint64]compStorer
-	entityIdx map[entity]uint //Index into the various component slices
-	nextIdx   uint            //Next availale index
-	openIdxs  []uint
-	mutable   bool
+	signature  uint64
+	compStores map[uint64]compStorer
+	entityIdx  map[entity]uint //Index into the various component slices
+	nextIdx    uint            //Next availale index
+	entities   []entity        //Stores ordered list of entities. Used for removal
+	mutable    bool
 }
 
 func NewArchetype() *archetype {
 	a := archetype{
-		signature: 0,
-		compStore: map[uint64]compStorer{},
-		entityIdx: map[entity]uint{},
-		nextIdx:   0,
-		openIdxs:  []uint{},
-		mutable:   true,
+		signature:  0,
+		compStores: map[uint64]compStorer{},
+		entityIdx:  map[entity]uint{},
+		nextIdx:    0,
+		mutable:    true,
+		entities:   []entity{},
 	}
 	return &a
 }
@@ -29,7 +29,7 @@ func With[T any](ecs *ecs, a *archetype) {
 		panic("Gecs: An archetype's composition cannot be changed after being embed into an ECS.")
 	}
 	compSig := register[T](ecs)
-	a.compStore[compSig] = &compStore[T]{
+	a.compStores[compSig] = &compStore[T]{
 		data: []T{},
 	}
 	a.signature |= ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]
@@ -37,16 +37,10 @@ func With[T any](ecs *ecs, a *archetype) {
 
 // Inserts entity into the next available idx
 func (a *archetype) insertEntity(e entity) {
-	var idx uint
-	if len(a.openIdxs) > 0 {
-		idx = a.openIdxs[len(a.openIdxs)-1] //Pop from slice
-		a.openIdxs = a.openIdxs[:len(a.openIdxs)-1]
-	} else {
-		idx = a.nextIdx
-		a.nextIdx++
-	}
+	idx := a.nextIdx
 	a.entityIdx[e] = idx
-	for _, store := range a.compStore {
+	for _, store := range a.compStores {
 		store.grow(idx)
 	}
+	a.nextIdx++
 }

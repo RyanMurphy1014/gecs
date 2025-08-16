@@ -22,6 +22,9 @@ func NewEcs() *ecs {
 }
 
 func register[T any](ecs *ecs) uint64 {
+	if ecs.nextCompID > 64 {
+		panic("Limit has been reached on number of components that can be registered")
+	}
 	key := reflect.TypeOf((*T)(nil)).Elem()
 	if compId, ok := ecs.componentIds[key]; ok {
 		return compId
@@ -50,7 +53,7 @@ func Query[T any](ecs *ecs, e entity) T {
 	if a.mutable {
 		panic("Gecs: Archetype composition must be finalized by calling ecs's method EmbedArchetype() before use.")
 	}
-	untypeStore := a.compStore[ecs.componentIds[tType]]
+	untypeStore := a.compStores[ecs.componentIds[tType]]
 	typedStore, _ := untypeStore.(*compStore[T])
 	return typedStore.data[a.entityIdx[e]]
 }
@@ -61,51 +64,27 @@ func (ecs *ecs) EmbedArchetype(a *archetype) {
 }
 
 func MutateEntity[T any](ecs *ecs, e entity, comp T) {
-	TType := reflect.TypeOf((*T)(nil)).Elem()
+	tType := reflect.TypeOf((*T)(nil)).Elem()
 	compType := reflect.TypeOf(comp)
-	ecs.isCompRegistered(comp)
-	if TType != compType {
-		panic(fmt.Sprintf("Gecs: Generic Type:%v is not the same type as argument comp type:%v", TType, compType))
+
+	if _, ok := ecs.componentIds[compType]; !ok {
+		panic(fmt.Sprintf("Gecs: Component:%v is not registered with ecs", compType))
 	}
+
+	if tType != compType {
+		panic(fmt.Sprintf("Gecs: Generic Type:%v is not the same type as argument comp type:%v", tType, compType))
+	}
+
 	compSig := ecs.componentIds[compType]
 	a, ok := ecs.entToArche[e]
 	if !ok {
 		panic("Gecs: Could not find matching archetype")
 	}
-	store, ok := a.compStore[compSig].(*compStore[T])
+
+	store, ok := a.compStores[compSig].(*compStore[T])
 	if !ok {
 		panic("Gecs: Could not type assert")
 	}
+
 	store.data[a.entityIdx[e]] = comp
-}
-
-func (ecs *ecs) isCompRegistered(comp any) {
-	compType := reflect.TypeOf(comp)
-	if _, ok := ecs.componentIds[compType]; !ok {
-		panic(fmt.Sprintf("Gecs: Component:%v is not registered with ecs", compType))
-	}
-}
-
-func (ecs *ecs) AddEntToArche(a archetype, compSet ...any) entity {
-	e := newEntity()
-	for _, comp := range compSet {
-		compType := reflect.TypeOf(comp)
-		compSig, ok := ecs.componentIds[compType]
-		//If comp is registered
-		if !ok {
-			panic(fmt.Sprintf("Gecs: Component:%v is registered", compType))
-		}
-
-		//If component does not belong to archetype
-		if (compSig & a.signature) != compSig {
-			panic(fmt.Sprintf("Gecs: Component:%v is not a part of archetype with signature:%v", compType, a.signature))
-		}
-
-		ecs.entToArche[e] = &a
-		a.insertEntity(e)
-		compStore := a.compStore[compSig]
-		compStore.add(comp, e, &a)
-		a.compStore[compSig] = compStore
-	}
-	return e
 }
