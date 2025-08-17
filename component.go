@@ -8,7 +8,7 @@ type compStorer interface {
 	add(data any, e entity, a *archetype)
 	growTo(idx int)
 	delete(e entity, a *archetype)
-	get(idx int) any
+	get(idx int) compStorer
 }
 
 type compStore[T any] struct {
@@ -35,21 +35,15 @@ func (cs *compStore[T]) growTo(idx int) {
 	}
 }
 
-// MUST be done after system has ran. Could lead to swapped entity not being ran
 func (cs *compStore[T]) delete(e entity, a *archetype) {
 	removalIdx := a.entityIdx[e]
-	preOpLen := len(cs.data)
-
-	delete(a.entityIdx, e)
-	a.entityIdx[a.entities[len(a.entities)-1]] = removalIdx
-
-	cs.data[removalIdx] = cs.data[preOpLen-1]
-	cs.data = cs.data[:preOpLen-1]
-
-	a.entities[removalIdx] = a.entities[preOpLen-1]
-	a.entities = a.entities[:preOpLen-1]
+	lastIdx := len(cs.data) - 1
+	cs.data[removalIdx] = cs.data[lastIdx]
+	cs.data = cs.data[:lastIdx]
 }
 
-func (cs *compStore[T]) get(idx int) any {
-	return cs.data[idx]
+func (cs *compStore[T]) get(idx int) compStorer {
+	return &compStore[T]{
+		data: []T{cs.data[idx]},
+	}
 }

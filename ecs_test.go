@@ -1,165 +1,108 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
-	"reflect"
-	"strings"
 	"testing"
 )
 
 func TestQuerying(t *testing.T) {
 
 	ecs := NewEcs()
-	register[Attributes](ecs)
+	vectorId := register[vector](ecs)
+	register[location](ecs)
 
-	attributesArche := NewArchetype()
-	With[Attributes](ecs, attributesArche)
-	ecs.EmbedArchetype(attributesArche)
+	vectorArche := NewArchetype()
+	With[vector](ecs, vectorArche)
+	ecs.LinkArchetype(vectorArche)
 
-	e := ecs.NewEntity(attributesArche)
+	locationArche := NewArchetype()
+	With[location](ecs, locationArche)
+	ecs.LinkArchetype(locationArche)
 
-	attrComp := WithAttributes(true)
-	MutateEntity(ecs, e, attrComp)
+	e := ecs.NewEntity(vectorArche)
+
+	vector1 := vector{}
+	UpdateEntity(ecs, e, vector1)
 
 	t.Run("Entity with single component", func(t *testing.T) {
-		queriedComp := Query[Attributes](ecs, e)
-		if queriedComp != attrComp {
-			t.Fatalf("Queried Comp:\n%v does not match control comp:\n%v", queriedComp, attrComp)
+		queriedComp := Query[vector](ecs, e)
+		if queriedComp != vector1 {
+			t.Fatalf("Queried Comp:\n%v does not match control comp:\n%v", queriedComp, vector1)
 		}
 	})
 
-	attrAndPersonalityArche := NewArchetype()
-	With[Attributes](ecs, attrAndPersonalityArche)
-	With[Personality](ecs, attrAndPersonalityArche)
-	ecs.EmbedArchetype(attrAndPersonalityArche)
+	vecAndLocArche := NewArchetype()
+	With[vector](ecs, vecAndLocArche)
+	With[location](ecs, vecAndLocArche)
+	ecs.LinkArchetype(vecAndLocArche)
 
-	e2 := ecs.NewEntity(attrAndPersonalityArche)
+	e2 := ecs.NewEntity(vecAndLocArche)
 
-	personalityComp := WithPersonality(true)
-	MutateEntity(ecs, e2, attrComp)
-	MutateEntity(ecs, e2, personalityComp)
+	location1 := location{}
+	UpdateEntity(ecs, e2, vector1)
+	UpdateEntity(ecs, e2, location1)
 
 	t.Run("Entity with multiple components", func(t *testing.T) {
-		queriedAttr := Query[Attributes](ecs, e2)
-		queriedPersonality := Query[Personality](ecs, e2)
-		if queriedAttr != attrComp {
-			t.Fatalf("Attributes does not match")
+		queriedVec := Query[vector](ecs, e2)
+		queriedLoc := Query[location](ecs, e2)
+		if queriedVec != vector1 {
+			t.Fatalf("Comps do not match. Got:%v - Want:%v", queriedVec, vector1)
 		}
-		if queriedPersonality != personalityComp {
-			t.Fatalf("Personality does not match")
+		if queriedLoc != location1 {
+			t.Fatalf("Comps do not match. Got:%v - Want:%v", queriedLoc, location1)
 		}
 	})
 
-	e3 := ecs.NewEntity(attrAndPersonalityArche)
-	attrComp2 := WithAttributes(true)
-	personalityComp2 := WithPersonality(true)
-	MutateEntity(ecs, e3, attrComp2)
-	MutateEntity(ecs, e3, personalityComp2)
+	e3 := ecs.NewEntity(vecAndLocArche)
+	vector2 := vector{2, 2, 2}
+	location2 := location{5, 5}
+	UpdateEntity(ecs, e3, vector2)
+	UpdateEntity(ecs, e3, location2)
 
 	t.Run("Archetype with multiple entities", func(t *testing.T) {
-		queriedAttr := Query[Attributes](ecs, e3)
-		queriedPersonality := Query[Personality](ecs, e3)
-		if queriedAttr != attrComp2 {
-			t.Fatalf("Attributes does not match")
+		queriedVec := Query[vector](ecs, e3)
+		queriedLoc := Query[location](ecs, e3)
+		if queriedVec != vector2 {
+			t.Fatalf("Comps do not match. Got:%v - Want:%v", queriedVec, vector2)
 		}
-		if queriedPersonality != personalityComp2 {
-			t.Fatalf("Personlaity does not match")
+		if queriedLoc != location2 {
+			t.Fatalf("Comps do not match. Got:%v - Want:%v", queriedLoc, location2)
 		}
 	})
 
-	e4 := ecs.NewEntity(attributesArche)
+	t.Run("Removed Component", func(t *testing.T) {
+		newlyCreatedArche := DeleteComponent(ecs, e3, vectorId)
+		querriedLocation := Query[location](ecs, e3)
+		if querriedLocation != location2 {
+			t.Fatalf("Comps do not match. Got:%v - Want:%v", querriedLocation, location2)
+		}
+		t.Log(newlyCreatedArche)
+	})
+
+	e4 := ecs.NewEntity(vectorArche)
 	t.Run("Entity with default value", func(t *testing.T) {
-		if Query[Attributes](ecs, e4) != WithAttributes(false) {
+		if Query[vector](ecs, e4) != (vector{}) {
 			t.Fatalf("Corresponding compStore is not initialized")
 		}
 	})
 
-}
-
-type Attributes struct {
-	Strength     int
-	Dexterity    int
-	Constitution int
-	Wisdom       int
-	Intelligence int
-	Charisma     int
-}
-
-func WithAttributes(random bool) Attributes {
-	if random == true {
-		return Attributes{
-			Strength:     RandomStat(),
-			Dexterity:    RandomStat(),
-			Constitution: RandomStat(),
-			Wisdom:       RandomStat(),
-			Intelligence: RandomStat(),
-			Charisma:     RandomStat(),
+	e5 := ecs.NewEntity(vectorArche)
+	nonDefaultVec := vector{
+		x: 5,
+		y: 15,
+		z: 20,
+	}
+	UpdateEntity(ecs, e5, nonDefaultVec)
+	t.Run("Entity with non default value", func(t *testing.T) {
+		if Query[vector](ecs, e5) != nonDefaultVec {
+			t.Fatalf("Comps do not match")
 		}
-	}
-	return Attributes{
-		Strength:     0,
-		Dexterity:    0,
-		Constitution: 0,
-		Wisdom:       0,
-		Intelligence: 0,
-		Charisma:     0,
-	}
+	})
 }
 
-type Personality struct {
-	Aggression int // 0=Pacifist, 100=Aggressive
-	Curiosity  int // 0=Traditionalist, 100=Curious
-	Drive      int // 0=Lazy, 100=Industrious
-	Empathy    int // 0=Calloused, 100=Empath
-	Honesty    int // 0=Liar, 100=Truthful
-	Loyalty    int // 0=Spineless, 100=Loyal
-	Optimism   int // 0=Pessimistic, 100=Optimistic
-	Reason     int // 0=Impulsive, 100=Rational
-	Socialness int // 0=Solitary, 100=Gregarious
+type vector struct {
+	x, y, z float64
 }
 
-func (p Personality) String() string {
-	var sb strings.Builder
-
-	val := reflect.ValueOf(p)
-	typ := val.Type()
-	sb.WriteString("{")
-	for i := range val.NumField() {
-		sb.WriteString(fmt.Sprintf("\n\t\t%v : %+v", typ.Field(i).Name, val.Field(i)))
-	}
-	sb.WriteString(" }")
-	return sb.String()
-}
-
-func WithPersonality(random bool) Personality {
-	if !random {
-		return Personality{
-			Aggression: 0,
-			Curiosity:  0,
-			Drive:      0,
-			Empathy:    0,
-			Honesty:    0,
-			Loyalty:    0,
-			Optimism:   0,
-			Reason:     0,
-			Socialness: 0,
-		}
-	} else {
-		return Personality{
-			Aggression: RandomStat(),
-			Curiosity:  RandomStat(),
-			Drive:      RandomStat(),
-			Empathy:    RandomStat(),
-			Honesty:    RandomStat(),
-			Loyalty:    RandomStat(),
-			Optimism:   RandomStat(),
-			Reason:     RandomStat(),
-			Socialness: RandomStat(),
-		}
-	}
-}
-
-func RandomStat() int {
-	return rand.Intn(100) + 1
+type location struct {
+	x, y float64
 }
