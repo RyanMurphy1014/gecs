@@ -1,11 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type compStorer interface {
 	add(data any, e entity, a *archetype)
-	grow(idx int)
-	remove(e entity, a *archetype)
+	growTo(idx int)
+	delete(e entity, a *archetype)
+	get(idx int) any
 }
 
 type compStore[T any] struct {
@@ -24,7 +27,7 @@ func (cs *compStore[T]) add(data any, e entity, a *archetype) {
 	a.entityIdx[e] = len(cs.data) - 1
 }
 
-func (cs *compStore[T]) grow(idx int) {
+func (cs *compStore[T]) growTo(idx int) {
 	if int(idx) >= len(cs.data) {
 		newSlice := make([]T, idx+1)
 		copy(newSlice, cs.data)
@@ -33,7 +36,7 @@ func (cs *compStore[T]) grow(idx int) {
 }
 
 // MUST be done after system has ran. Could lead to swapped entity not being ran
-func (cs *compStore[T]) remove(e entity, a *archetype) {
+func (cs *compStore[T]) delete(e entity, a *archetype) {
 	removalIdx := a.entityIdx[e]
 	preOpLen := len(cs.data)
 
@@ -45,4 +48,8 @@ func (cs *compStore[T]) remove(e entity, a *archetype) {
 
 	a.entities[removalIdx] = a.entities[preOpLen-1]
 	a.entities = a.entities[:preOpLen-1]
+}
+
+func (cs *compStore[T]) get(idx int) any {
+	return cs.data[idx]
 }

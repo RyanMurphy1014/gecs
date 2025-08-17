@@ -23,7 +23,7 @@ func NewEcs() *ecs {
 
 func register[T any](ecs *ecs) uint64 {
 	if ecs.nextCompID > 64 {
-		panic("Limit has been reached on number of components that can be registered")
+		panic("Gecs: Limit has been reached on number of components that can be registered")
 	}
 	key := reflect.TypeOf((*T)(nil)).Elem()
 	if compId, ok := ecs.componentIds[key]; ok {
@@ -88,3 +88,16 @@ func MutateEntity[T any](ecs *ecs, e entity, comp T) {
 
 	store.data[a.entityIdx[e]] = comp
 }
+
+// func RemoveComponent[T any](ecs *ecs, e entity) *archetype {
+// 	a := ecs.entToArche[e]
+// 	entityComps := make([]any, 0)
+// 	compTypes := make([]reflect.Type, 0)
+// 	for _, store := range a.compStores {
+// 		entityComps = append(entityComps, store.get(a.entityIdx[e]))
+// 		compTypes = append(compTypes, store.storeType())
+// 		store.remove(e, a)
+// 	}
+// 	newArche := NewArchetype()
+//
+// }

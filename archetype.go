@@ -6,7 +6,6 @@ type archetype struct {
 	signature  uint64
 	compStores map[uint64]compStorer
 	entityIdx  map[entity]int //Index into the various component slices
-	nextIdx    int            //Next availale index
 	entities   []entity       //Stores ordered list of entities. Used for removal
 	mutable    bool
 }
@@ -16,7 +15,6 @@ func NewArchetype() *archetype {
 		signature:  0,
 		compStores: map[uint64]compStorer{},
 		entityIdx:  map[entity]int{},
-		nextIdx:    0,
 		mutable:    true,
 		entities:   []entity{},
 	}
@@ -37,10 +35,9 @@ func With[T any](ecs *ecs, a *archetype) {
 
 // Inserts entity into the next available idx
 func (a *archetype) insertEntity(e entity) {
-	idx := a.nextIdx
+	idx := len(a.entities) + 1
 	a.entityIdx[e] = idx
 	for _, store := range a.compStores {
-		store.grow(idx)
+		store.growTo(idx)
 	}
-	a.nextIdx++
 }
