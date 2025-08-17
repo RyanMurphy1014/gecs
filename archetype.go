@@ -5,9 +5,9 @@ import "reflect"
 type archetype struct {
 	signature  uint64
 	compStores map[uint64]compStorer
-	entityIdx  map[entity]uint //Index into the various component slices
-	nextIdx    uint            //Next availale index
-	entities   []entity        //Stores ordered list of entities. Used for removal
+	entityIdx  map[entity]int //Index into the various component slices
+	nextIdx    int            //Next availale index
+	entities   []entity       //Stores ordered list of entities. Used for removal
 	mutable    bool
 }
 
@@ -15,7 +15,7 @@ func NewArchetype() *archetype {
 	a := archetype{
 		signature:  0,
 		compStores: map[uint64]compStorer{},
-		entityIdx:  map[entity]uint{},
+		entityIdx:  map[entity]int{},
 		nextIdx:    0,
 		mutable:    true,
 		entities:   []entity{},

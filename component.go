@@ -4,7 +4,7 @@ import "fmt"
 
 type compStorer interface {
 	add(data any, e entity, a *archetype)
-	grow(idx uint)
+	grow(idx int)
 	remove(e entity, a *archetype)
 }
 
@@ -21,10 +21,10 @@ func UpdateComp[T any](cs compStore[T], data T, e entity, a *archetype) {
 
 func (cs *compStore[T]) add(data any, e entity, a *archetype) {
 	cs.data = append(cs.data, data.(T))
-	a.entityIdx[e] = uint(len(cs.data) - 1)
+	a.entityIdx[e] = len(cs.data) - 1
 }
 
-func (cs *compStore[T]) grow(idx uint) {
+func (cs *compStore[T]) grow(idx int) {
 	if int(idx) >= len(cs.data) {
 		newSlice := make([]T, idx+1)
 		copy(newSlice, cs.data)
@@ -45,5 +45,4 @@ func (cs *compStore[T]) remove(e entity, a *archetype) {
 
 	a.entities[removalIdx] = a.entities[preOpLen-1]
 	a.entities = a.entities[:preOpLen-1]
-
 }
