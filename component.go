@@ -9,6 +9,7 @@ type compStorer interface {
 	growTo(idx int)
 	delete(e entity, a *archetype)
 	get(idx int) compStorer
+	append(src compStorer)
 }
 
 type compStore[T any] struct {
@@ -46,4 +47,9 @@ func (cs *compStore[T]) get(idx int) compStorer {
 	return &compStore[T]{
 		data: []T{cs.data[idx]},
 	}
+}
+
+func (cs *compStore[T]) append(src compStorer) {
+	typedSrc := src.(*compStore[T])
+	cs.data = append(cs.data, typedSrc.data...)
 }

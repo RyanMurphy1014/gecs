@@ -55,21 +55,27 @@ func UpdateEntity[T any](ecs *ecs, e entity, comp T) {
 
 func DeleteComponent(ecs *ecs, e entity, compSig uint64) *archetype {
 	currArche := ecs.entToArche[e]
-	copiedCompStores := make(map[uint64]compStorer)
-	targetArcheSig := currArche.signature ^ compSig
-	var idx uint64 = 0
-	for i := range 64 {
-		idx = 1 << i
-		targetCompSig := targetArcheSig & idx
-		if targetCompSig > 0 {
-			copiedCompStores[targetCompSig] = currArche.compStores[targetCompSig].get(currArche.entityIdx[e])
-		}
+	if currArche.signature == compSig {
+		panic("Gecs: Attempted to remove from a single component entity. Empty entities are not allowed.")
 	}
-	currArche.unlinkEntity(e)
 
-	targetArcheSig = currArche.signature ^ compSig
+	targetArcheSig := currArche.signature ^ compSig
+	exsistingArche, exsists := ecs.archetypes[targetArcheSig]
+	entIdx := currArche.entityIdx[e]
+
 	var outputArche *archetype = nil
-	if exsistingArche, ok := ecs.archetypes[targetArcheSig]; !ok {
+	var idx uint64 = 0
+	if !exsists {
+		copiedCompStores := make(map[uint64]compStorer)
+		for i := range 64 {
+			idx = 1 << i
+			targetCompSig := targetArcheSig & idx
+			if targetCompSig > 0 {
+				copiedCompStores[targetCompSig] = currArche.compStores[targetCompSig].get(entIdx)
+			}
+		}
+		currArche.unlinkEntity(e)
+
 		newArche := &archetype{
 			signature:          targetArcheSig,
 			compStores:         copiedCompStores,
@@ -77,17 +83,24 @@ func DeleteComponent(ecs *ecs, e entity, compSig uint64) *archetype {
 			entities:           []entity{},
 			mutableComposition: true,
 		}
+
 		newArche.entityIdx[e] = 0
-		if newArche.signature == 0 {
-			panic("Gecs: Attempted to remove from a single component entity. Empty entities are not allowed.")
-		}
 
 		ecs.archetypes[newArche.signature] = newArche
 		ecs.LinkArchetype(newArche)
 		outputArche = newArche
 	} else {
 		outputArche = exsistingArche
+		for i := range 64 {
+			idx = 1 << i
+			targetCompSig := targetArcheSig & idx
+			if targetCompSig > 0 {
+				outputArche.compStores[targetCompSig].append(currArche.compStores[targetCompSig].get(entIdx))
+			}
+		}
 	}
+
+	targetArcheSig = currArche.signature ^ compSig
 	ecs.entToArche[e] = outputArche
 	outputArche.insertEntity(e)
 	outputArche.entities = append(outputArche.entities, e)
