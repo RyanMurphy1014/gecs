@@ -10,6 +10,7 @@ type ecs struct {
 	entToArche   map[entity]*archetype //What archetype an entity belongs to
 	componentIds map[reflect.Type]uint64
 	nextCompID   uint64
+	sysHeaders   []systemHeader
 }
 
 func register[T any](ecs *ecs) uint64 {
