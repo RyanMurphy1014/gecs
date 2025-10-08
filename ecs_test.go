@@ -10,13 +10,11 @@ func TestQuerying(t *testing.T) {
 	vectorId := RegisterComp[vector](ecs)
 	RegisterComp[location](ecs)
 
-	vectorArche := NewArchetype()
-	With[vector](ecs, vectorArche)
-	ecs.LinkArchetype(vectorArche)
+	vectorArche := NewArchetype().AddComponents(ecs, With[vector]())
+	ecs.AddArchetype(vectorArche)
 
-	locationArche := NewArchetype()
-	With[location](ecs, locationArche)
-	ecs.LinkArchetype(locationArche)
+	locationArche := NewArchetype().AddComponents(ecs, With[location]())
+	ecs.AddArchetype(locationArche)
 
 	e := ecs.NewEntity(vectorArche)
 
@@ -30,10 +28,8 @@ func TestQuerying(t *testing.T) {
 		}
 	})
 
-	vecAndLocArche := NewArchetype()
-	With[vector](ecs, vecAndLocArche)
-	With[location](ecs, vecAndLocArche)
-	ecs.LinkArchetype(vecAndLocArche)
+	vecAndLocArche := NewArchetype().AddComponents(ecs, With[vector](), With[location]())
+	ecs.AddArchetype(vecAndLocArche)
 
 	e2 := ecs.NewEntity(vecAndLocArche)
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var world *ecs = NewEcs()
+var schedEcs *ecs = NewEcs()
 
 type velocity struct {
 	x, y, z float64
@@ -16,12 +16,11 @@ func setupWorld() entity {
 		y: 10,
 		z: 15,
 	}
-	RegisterComp[velocity](world)
-	velocityArche := NewArchetype()
-	With[velocity](world, velocityArche)
-	world.LinkArchetype(velocityArche)
-	velocityEnt := world.NewEntity(velocityArche)
-	UpdateEntity(world, velocityEnt, testVelocity)
+	RegisterComp[velocity](schedEcs)
+	velocityArche := NewArchetype().AddComponents(schedEcs, With[velocity]())
+	schedEcs.AddArchetype(velocityArche)
+	velocityEnt := schedEcs.NewEntity(velocityArche)
+	UpdateEntity(schedEcs, velocityEnt, testVelocity)
 	return velocityEnt
 }
 
@@ -37,11 +36,11 @@ func TestExecuteSystems(t *testing.T) {
 			SystemWrite(ecs, ent, vel, increaseSysId)
 		},
 	}
-	RegisterSystem(world, increase5, increaseSysId)
+	RegisterSystem(schedEcs, increase5, increaseSysId)
 
-	t.Log(world.ExecuteSystems())
+	t.Log(schedEcs.ExecuteSystems())
 
-	gotVel := Query[velocity](world, ent)
+	gotVel := Query[velocity](schedEcs, ent)
 	wantVel := velocity{
 		x: 10,
 		y: 15,

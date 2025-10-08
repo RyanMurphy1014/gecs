@@ -90,7 +90,7 @@ func DeleteComponent(ecs *ecs, e entity, compSig uint64) *archetype {
 		newArche.entityIdx[e] = 0
 
 		ecs.archetypes[newArche.signature] = newArche
-		ecs.LinkArchetype(newArche)
+		ecs.AddArchetype(newArche)
 		outputArche = newArche
 	} else {
 		outputArche = exsistingArche
@@ -150,7 +150,7 @@ func (ecs *ecs) NewEntity(a *archetype) entity {
 }
 
 // Adds archetype to ecs's archetypes map and make archetype composition read-only
-func (ecs *ecs) LinkArchetype(a *archetype) {
+func (ecs *ecs) AddArchetype(a *archetype) {
 	ecs.archetypes[a.signature] = a
 	a.mutableComposition = false
 }

@@ -11,18 +11,29 @@ type archetype struct {
 }
 
 // Initializes archetype's component store for passed in type
-func With[T any](ecs *ecs, a *archetype) {
-	if !a.mutableComposition {
-		panic("Gecs: An archetype's composition cannot be changed after being embed into an ECS.")
+func (a *archetype) AddComponents(ecs *ecs, opts ...archeOption) *archetype {
+	for _, opt := range opts {
+		opt(ecs, a)
 	}
-	if _, ok := ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]; !ok {
-		panic("Gecs: Components must first be registered to an ECS with the Register function.")
+	return a
+}
+
+type archeOption func(*ecs, *archetype)
+
+func With[T any]() archeOption {
+	return func(ecs *ecs, a *archetype) {
+		if !a.mutableComposition {
+			panic("Gecs: An archetype's composition cannot be changed after being embed into an ECS.")
+		}
+		if _, ok := ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]; !ok {
+			panic("Gecs: Components must first be registered to an ECS with the Register function.")
+		}
+		compSig := RegisterComp[T](ecs)
+		a.compStores[compSig] = &compStore[T]{
+			data: []T{},
+		}
+		a.signature |= ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]
 	}
-	compSig := RegisterComp[T](ecs)
-	a.compStores[compSig] = &compStore[T]{
-		data: []T{},
-	}
-	a.signature |= ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]
 }
 
 func NewArchetype() *archetype {
