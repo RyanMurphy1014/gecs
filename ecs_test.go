@@ -7,8 +7,8 @@ import (
 func TestQuerying(t *testing.T) {
 
 	ecs := NewEcs()
-	vectorId := register[vector](ecs)
-	register[location](ecs)
+	vectorId := RegisterComp[vector](ecs)
+	RegisterComp[location](ecs)
 
 	vectorArche := NewArchetype()
 	With[vector](ecs, vectorArche)

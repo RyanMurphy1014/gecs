@@ -11,9 +11,11 @@ type ecs struct {
 	componentIds map[reflect.Type]uint64
 	nextCompID   uint64
 	sysHeaders   []systemHeader
+	sysToHeader  map[uint64]*systemHeader
+	dependencyCache
 }
 
-func register[T any](ecs *ecs) uint64 {
+func RegisterComp[T any](ecs *ecs) uint64 {
 	if ecs.nextCompID > 64 {
 		panic("Gecs: Limit has been reached on number of components that can be registered")
 	}
@@ -130,6 +132,12 @@ func NewEcs() *ecs {
 		entToArche:   map[entity]*archetype{},
 		componentIds: map[reflect.Type]uint64{},
 		nextCompID:   0,
+		sysHeaders:   []systemHeader{},
+		dependencyCache: dependencyCache{
+			depGraph:   map[uint64][]systemHeader{},
+			validCache: false,
+		},
+		sysToHeader: map[uint64]*systemHeader{},
 	}
 }
 

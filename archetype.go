@@ -18,7 +18,7 @@ func With[T any](ecs *ecs, a *archetype) {
 	if _, ok := ecs.componentIds[reflect.TypeOf((*T)(nil)).Elem()]; !ok {
 		panic("Gecs: Components must first be registered to an ECS with the Register function.")
 	}
-	compSig := register[T](ecs)
+	compSig := RegisterComp[T](ecs)
 	a.compStores[compSig] = &compStore[T]{
 		data: []T{},
 	}
