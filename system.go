@@ -44,20 +44,20 @@ type system interface {
 	run(ecs *ecs)
 }
 
-type ConditionalSys struct {
+type ConditionalSystem struct {
 	op        func(ecs *ecs)
 	condition func() bool
 }
 
-func (cs ConditionalSys) run(ecs *ecs) {
+func (cs ConditionalSystem) run(ecs *ecs) {
 	cs.op(ecs)
 }
 
-type SimpleSys struct {
+type System struct {
 	op func(ecs *ecs)
 }
 
-func (ss SimpleSys) run(ecs *ecs) {
+func (ss System) run(ecs *ecs) {
 	ss.op(ecs)
 }
 
