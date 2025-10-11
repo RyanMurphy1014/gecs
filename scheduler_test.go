@@ -38,7 +38,7 @@ func TestExecuteSystems(t *testing.T) {
 	}
 	RegisterSystem(schedEcs, increase5, increaseSysId)
 
-	t.Log(schedEcs.ExecuteSystems())
+	t.Log(schedEcs.TickSystems())
 
 	gotVel := Query[velocity](schedEcs, ent)
 	wantVel := velocity{

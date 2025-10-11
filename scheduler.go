@@ -15,7 +15,7 @@ type dependencyCache struct {
 	batches    [][]systemHeader
 }
 
-func (ecs *ecs) ExecuteSystems() error {
+func (ecs *ecs) TickSystems() error {
 	needsRebatch := false
 	if !ecs.validCache {
 		cacheError := cacheDepGraph(ecs)

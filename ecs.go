@@ -1,5 +1,8 @@
 package main
 
+//ECS system run method is in scheduler.go
+//Makes sense to have that big piece of logic there
+
 import (
 	"fmt"
 	"reflect"
