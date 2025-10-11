@@ -53,15 +53,6 @@ func (cs ConditionalSys) run(ecs *ecs) {
 	cs.op(ecs)
 }
 
-type TimedSys struct {
-	op func(ecs *ecs)
-	dt float64
-}
-
-func (ds TimedSys) run(ecs *ecs) {
-	ds.op(ecs)
-}
-
 type SimpleSys struct {
 	op func(ecs *ecs)
 }
