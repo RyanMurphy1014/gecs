@@ -19,7 +19,7 @@ func TestQuerying(t *testing.T) {
 	e := ecs.NewEntity(vectorArche)
 
 	vector1 := vector{}
-	UpdateEntity(ecs, e, vector1)
+	SetEntity(ecs, e, vector1)
 
 	t.Run("Entity with single component", func(t *testing.T) {
 		queriedComp := Query[vector](ecs, e)
@@ -34,8 +34,8 @@ func TestQuerying(t *testing.T) {
 	e2 := ecs.NewEntity(vecAndLocArche)
 
 	location1 := location{}
-	UpdateEntity(ecs, e2, vector1)
-	UpdateEntity(ecs, e2, location1)
+	SetEntity(ecs, e2, vector1)
+	SetEntity(ecs, e2, location1)
 
 	t.Run("Entity with multiple components", func(t *testing.T) {
 		queriedVec := Query[vector](ecs, e2)
@@ -51,8 +51,8 @@ func TestQuerying(t *testing.T) {
 	e3 := ecs.NewEntity(vecAndLocArche)
 	vector2 := vector{2, 2, 2}
 	location2 := location{5, 5}
-	UpdateEntity(ecs, e3, vector2)
-	UpdateEntity(ecs, e3, location2)
+	SetEntity(ecs, e3, vector2)
+	SetEntity(ecs, e3, location2)
 
 	t.Run("Archetype with multiple entities", func(t *testing.T) {
 		queriedVec := Query[vector](ecs, e3)
@@ -87,7 +87,7 @@ func TestQuerying(t *testing.T) {
 		y: 15,
 		z: 20,
 	}
-	UpdateEntity(ecs, e5, nonDefaultVec)
+	SetEntity(ecs, e5, nonDefaultVec)
 	t.Run("Entity with non default value", func(t *testing.T) {
 		if Query[vector](ecs, e5) != nonDefaultVec {
 			t.Fatalf("Comps do not match")

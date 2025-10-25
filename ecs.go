@@ -33,7 +33,7 @@ func RegisterComp[T any](ecs *ecs) uint64 {
 	return compId
 }
 
-func UpdateEntity[T any](ecs *ecs, e entity, comp T) {
+func SetEntity[T any](ecs *ecs, e entity, comp T) {
 	tType := reflect.TypeOf((*T)(nil)).Elem()
 	compType := reflect.TypeOf(comp)
 

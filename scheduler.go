@@ -15,15 +15,22 @@ type dependencyCache struct {
 	batches    [][]systemHeader
 }
 
-func (ecs *ecs) TickSystems() error {
-	needsRebatch := false
+func validCache(ecs *ecs) (bool, error) {
 	if !ecs.validCache {
 		cacheError := cacheDepGraph(ecs)
-		if !errors.Is(cacheError, ErrSystemsNeedReBatching) {
-			return cacheError
+		if errors.Is(cacheError, ErrSystemsNeedReBatching) {
+			return false, cacheError
 		} else {
-			needsRebatch = true
+			return false, errors.New("Systems need rebatchiing")
 		}
+	}
+	return true, nil
+}
+
+func (ecs *ecs) TickSystems() error {
+
+	if valid, err := validCache(ecs); valid == true && err == nil {
+		cacheDepGraph(ecs)
 	}
 
 	var wg sync.WaitGroup
@@ -38,23 +45,10 @@ func (ecs *ecs) TickSystems() error {
 		wg.Wait()
 	}
 
-	if needsRebatch {
-		cacheDepGraph(ecs)
-	}
-
 	return nil
 }
 
-func cacheDepGraph(ecs *ecs) error {
-	ecs.batches = make([][]systemHeader, 64)
-	sysHeaders, err := applicableSystems(ecs.sysHeaders)
-	if err != nil && len(ecs.sysHeaders) == 0 {
-		return fmt.Errorf("Gecs: No systems are registered with this ECS ~ %w", err)
-	}
-	if err != nil {
-		return err
-	}
-	//Generate dependency graph
+func generateDepGraph(ecs *ecs, sysHeaders []systemHeader) {
 	depGraph := ecs.depGraph
 	if len(sysHeaders) > 1 {
 		for _, sysA := range sysHeaders {
@@ -68,7 +62,9 @@ func cacheDepGraph(ecs *ecs) error {
 			}
 		}
 	}
-	//Mark batchable systems
+}
+
+func batch(ecs *ecs, sysHeaders []systemHeader) (err error, batch []systemHeader) {
 	acyclicDependency := false
 	batchingComplete := false
 	batchCount := 0
@@ -106,26 +102,44 @@ func cacheDepGraph(ecs *ecs) error {
 			batchingComplete = true
 		}
 
-		//Write batches
-		currBatch := make([]systemHeader, 0, 64)
-		for _, header := range batch {
-			header.ioReadyToInfer = true
-			currBatch = append(currBatch, header)
-			ecs.batches[batchCount] = currBatch
-
-			for _, dep := range ecs.depGraph[header.id] {
-				dep.inDegree--
-			}
-		}
+		writeBatches(ecs, batch, batchCount)
 	}
-
 	if newSystemAdded {
-		return ErrSystemsNeedReBatching
+		return ErrSystemsNeedReBatching, nil
 	}
 
 	if !acyclicDependency {
-		return ErrCircularDependency
+		return ErrCircularDependency, nil
 	}
+	return nil, batch
+}
+
+func writeBatches(ecs *ecs, batch []systemHeader, batchCount int) {
+	//TODO: Stash these changes and see how the original implementation was done
+	//Does singular batches get sent to write?
+	currBatch := make([]systemHeader, 0, 64)
+	for _, header := range batch {
+		header.ioReadyToInfer = true
+		currBatch = append(currBatch, header)
+		ecs.batches = append(ecs.batches, currBatch)
+
+		for _, dep := range ecs.depGraph[header.id] {
+			dep.inDegree--
+		}
+	}
+}
+
+func cacheDepGraph(ecs *ecs) error {
+	ecs.batches = make([][]systemHeader, 0, 64)
+	sysHeaders, err := applicableSystems(ecs.sysHeaders)
+	if err != nil && len(ecs.sysHeaders) == 0 {
+		return fmt.Errorf("Gecs: No systems are registered with this ECS ~ %w", err)
+	}
+	if err != nil {
+		return err
+	}
+	generateDepGraph(ecs, sysHeaders)
+	batch(ecs, sysHeaders)
 
 	ecs.validCache = true
 	return nil
@@ -139,14 +153,10 @@ func applicableSystems(sysHeaders []systemHeader) ([]systemHeader, error) {
 	for i, header := range sysHeaders {
 		sys := header.system
 		switch v := sys.(type) {
-		case SimpleSys:
+		case System:
 			applicable = append(applicable, sysHeaders[i])
-		case ConditionalSys:
+		case ConditionalSystem:
 			if v.condition() == true {
-				applicable = append(applicable, sysHeaders[i])
-			}
-		case TimedSys:
-			if v.dt > 0 { // TODO: PLACEHOLDER
 				applicable = append(applicable, sysHeaders[i])
 			}
 		}
@@ -156,17 +166,23 @@ func applicableSystems(sysHeaders []systemHeader) ([]systemHeader, error) {
 }
 
 func conflict(sysA systemHeader, sysB systemHeader) bool {
-	if sysA.ioReadyToInfer == false || sysB.ioReadyToInfer == false {
+	switch {
+	case sysA.id == sysB.id:
+		return false
+
+	case sysA.ioReadyToInfer == false || sysB.ioReadyToInfer == false:
 		return true
-	}
-	if (sysA.writesMask & sysB.writesMask) != 0 {
+
+	case (sysA.writesMask & sysB.writesMask) != 0:
 		return true
-	}
-	if (sysA.writesMask & sysB.readsMask) != 0 {
+
+	case (sysA.writesMask & sysB.readsMask) != 0:
 		return true
-	}
-	if (sysA.readsMask & sysB.writesMask) != 0 {
+
+	case (sysA.readsMask & sysB.writesMask) != 0:
 		return true
+
+	default:
+		return false
 	}
-	return false
 }
