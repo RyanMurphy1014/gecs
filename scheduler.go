@@ -67,7 +67,6 @@ func generateDepGraph(ecs *ecs, sysHeaders []systemHeader) {
 func batch(ecs *ecs, sysHeaders []systemHeader) (err error, batch []systemHeader) {
 	acyclicDependency := false
 	batchingComplete := false
-	batchCount := 0
 	newSystemAdded := false
 	for !batchingComplete {
 		batch := make([]systemHeader, 0, len(sysHeaders))
@@ -102,7 +101,7 @@ func batch(ecs *ecs, sysHeaders []systemHeader) (err error, batch []systemHeader
 			batchingComplete = true
 		}
 
-		writeBatches(ecs, batch, batchCount)
+		writeBatches(ecs, batch)
 	}
 	if newSystemAdded {
 		return ErrSystemsNeedReBatching, nil
@@ -114,9 +113,7 @@ func batch(ecs *ecs, sysHeaders []systemHeader) (err error, batch []systemHeader
 	return nil, batch
 }
 
-func writeBatches(ecs *ecs, batch []systemHeader, batchCount int) {
-	//TODO: Stash these changes and see how the original implementation was done
-	//Does singular batches get sent to write?
+func writeBatches(ecs *ecs, batch []systemHeader) {
 	currBatch := make([]systemHeader, 0, 64)
 	for _, header := range batch {
 		header.ioReadyToInfer = true

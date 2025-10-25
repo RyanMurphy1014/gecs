@@ -157,16 +157,3 @@ func (ecs *ecs) AddArchetype(a *archetype) {
 	ecs.archetypes[a.signature] = a
 	a.mutableComposition = false
 }
-
-// func RemoveComponent[T any](ecs *ecs, e entity) *archetype {
-// 	a := ecs.entToArche[e]
-// 	entityComps := make([]any, 0)
-// 	compTypes := make([]reflect.Type, 0)
-// 	for _, store := range a.compStores {
-// 		entityComps = append(entityComps, store.get(a.entityIdx[e]))
-// 		compTypes = append(compTypes, store.storeType())
-// 		store.remove(e, a)
-// 	}
-// 	newArche := NewArchetype()
-//
-// }
