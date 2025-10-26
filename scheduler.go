@@ -15,23 +15,18 @@ type dependencyCache struct {
 	batches    [][]systemHeader
 }
 
-func validCache(ecs *ecs) (bool, error) {
+func validateCache(ecs *ecs) error {
 	if !ecs.validCache {
-		cacheError := cacheDepGraph(ecs)
-		if errors.Is(cacheError, ErrSystemsNeedReBatching) {
-			return false, cacheError
-		} else {
-			return false, errors.New("Systems need rebatchiing")
+		err := cacheDepGraph(ecs)
+		if err != nil {
+			return err
 		}
 	}
-	return true, nil
+	return nil
 }
 
 func (ecs *ecs) TickSystems() error {
-
-	if valid, err := validCache(ecs); valid == true && err == nil {
-		cacheDepGraph(ecs)
-	}
+	err := validateCache(ecs)
 
 	var wg sync.WaitGroup
 	for _, batch := range ecs.batches {
@@ -45,7 +40,7 @@ func (ecs *ecs) TickSystems() error {
 		wg.Wait()
 	}
 
-	return nil
+	return err
 }
 
 func generateDepGraph(ecs *ecs, sysHeaders []systemHeader) {

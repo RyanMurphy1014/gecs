@@ -106,7 +106,7 @@ func TestConflictingSystems(t *testing.T) {
 	incVelocitySys := System{
 		op: func(ecs *ecs) {
 			vel := SystemRead[velocity](ecs2, ent, incVelocitySysId)
-			vel.x += 5
+			vel.x += 6
 			vel.y += 5
 			vel.z += 5
 			SystemWrite(ecs2, ent, vel, incVelocitySysId)
@@ -120,4 +120,6 @@ func TestConflictingSystems(t *testing.T) {
 	t.Log(ecs2.TickSystems())
 	t.Log(Query[rotation](ecs2, ent))
 	t.Log(ecs2.batches)
+	t.Log(Query[velocity](ecs2, ent))
+	t.Log(ecs2.TickSystems())
 }
